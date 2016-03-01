@@ -30,7 +30,7 @@ plt.ioff
 
 """ LITERALS AND TEST VALUES """
 
-frameLimit = 500
+frameLimit = 5000
 """ Maximum number of frames to iterate over. """
 
 numberReferenceImages = 100   
@@ -97,7 +97,7 @@ allImages, allAverages = imageImport(imagePath, gridNumber)
 
 referenceAverages = allAverages[:numberReferenceImages]
 imageAverages = allAverages[numberReferenceImages:]
-""" Taking the RGB mean value for the collections of images with regard to
+""" Take the RGB mean value for the collections of images with regard to
     each grid square. """
 
 
@@ -138,15 +138,18 @@ calibRange = [[calibTemperatures[i], calibTemperatures[i+1],
 """ Pairs of temperatures and the difference between each pair. """
 
 calibImageSets = [pt.listImages(path) for path in calibPaths]
+""" Gather the images located in the calibration directories. """
 
 calibAverages = pt.getCalibrationAverages(calibImageSets, calibTemperatures, 
                                           gridNumber)
+""" Apply the grid and get RGB averages for each calibration temperature. """
 
 gridSlopesSet = [np.mean(calibAverages.ix[temp[0]] - calibAverages.ix[temp[1]]) 
-                 / temp[2] for temp in calibRange]
-                          
+                 / temp[2] for temp in calibRange]                         
 gridSlopes = np.mean(pd.DataFrame(gridSlopesSet))
-""" TODO: This is awful to read. """
+""" The slope is defined as the change in intensity divided by the change in
+    temperature. The average delta-I / delta-T for each grid square over all
+    temperatures is used to provide a slope value of that square. """
 
 timeCalibration = round(time() - timeImport - timeZero, 0)
 print('Calibration time: {} s.'.format(timeCalibration))
@@ -158,19 +161,48 @@ print('Calibration time: {} s.'.format(timeCalibration))
 deltaIntensity = imageAverages - meanReferenceAverages
 
 plotTemperatures = deltaIntensity / gridSlopes + intTemperatures[0]
-""" Calculates the temperature based on the difference between the calibration
-    and the image's grid RGB averages. Need to use temperature calibrations to
-    estimate how this differenc relates to temperature. """
+""" Calculate the temperature based on the difference between the calibration
+    and the image's grid RGB averages. """
     
 plotTemperatures.to_excel(imagePath + '\\' + resultsName)
+""" Save the calculated temperatures for analysis. """
 
 if soundOn:
     Beep(600, 500)
+    
+
+""" ANALYSIS """
+
+figAnalysis = plt.figure()
+
+""" Plotting and saving the maximum temperature in each frame. """
+maxTemperatures = pd.Series([max(T) for i, T in plotTemperatures.iterrows()])
+plt.plot(maxTemperatures)
+plt.title('Maximum temperature per frame.')
+plt.savefig(imagePath + '\\max_temperatures' + plotType, dpi = 100)
+plt.clf()
+
+""" Plotting and saving the average temperature in each frame. """
+meanTemperatures = pd.Series([np.mean(T) 
+                              for i, T in plotTemperatures.iterrows()])
+plt.plot(meanTemperatures)
+plt.title('Average temperature per frame.')
+plt.savefig(imagePath + '\\mean_temperatures' + plotType, dpi = 100)
+plt.clf()
+
+""" Plotting and saving standard deviation of temperature in each frame. """
+deviationTemperatures = pd.Series([np.std(T) 
+                                   for i, T in plotTemperatures.iterrows()])
+plt.plot(deviationTemperatures)
+plt.title('Standard deviation in temperature per frame.')
+plt.savefig(imagePath + '\\std_dev_temperatures' + plotType, dpi = 100)
+plt.clf()
 
 print('Maximum value: {}'.format(max(plotTemperatures.max())))
 print('Minimum value: {}'.format(min(plotTemperatures.min())))
 print('Median value: {}'.format(np.median(plotTemperatures.median())))
 print('{} frames'.format(len(imageAverages)))
+""" Report the statistics for the user to be able to set the plot limits. """
 
     
 """ PLOTTING TEMPERATURE """
@@ -198,14 +230,6 @@ fig = plt.figure(figsize = (plotWidth, plotWidth/aspectRatio))
 
 for index, row in (plotTemperatures).iterrows():
 
-    frameNumber += 1
-    if np.mod(frameNumber, 100) == 0:
-        print('Frame {}'.format(frameNumber))
-    if frameNumber > frameLimit: 
-        print('Frame limit reached.')        
-        break
-    """ Iterating over the frames. Ends the loop if past the frame limit. """
-
     frameTitle = 'Frame {}'.format(frameNumber - 1)
     """ Title of each plot corresponds to its frame number in video. """
     
@@ -224,10 +248,21 @@ for index, row in (plotTemperatures).iterrows():
     """ Creating and formatting the plot with a colormap, the previously set
         Z limits, ticks with intervals of 1, and a black grid. """
 
-    plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi=100)
+    plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 100)
     plt.clf()
+    
+    frameNumber += 1
+    if np.mod(frameNumber, 100) == 0:
+        print('Frame {}'.format(frameNumber))
+    if frameNumber > frameLimit: 
+        print('Frame limit reached.')        
+        break
+    """ Iterating over the frames. Ends the loop if past the frame limit. """
     """ Save the figure within a subfolder of the initial directory, and then
         clear the figure for the next plot. """
+
+
+""" CLEANUP """
 
 timeComplete = round(time() - timeZero, 0)
 print('Completed in {} s.'.format(timeComplete))
@@ -237,4 +272,4 @@ if soundOn:
     Beep(600, 500)
 
 
-""" End of file """
+""" END OF FILE """
