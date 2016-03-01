@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb  3 16:51:48 2016
+PLIF Temperature Calculator
+    Created on Wed Feb  3 16:51:48 2016
 
-@author: Darren Banks
+    @author: Darren Banks
 
 plif_temperature calculates temperature in a plane of rhodamine-B solution
 based on the intensity at which the rhodamine fluoresces under planar laser
@@ -14,11 +15,13 @@ import numpy as np
 import os
 import pandas as pd
 import PIL as pil
-import plif_tools
+import plif_tools as pt
 from time import time
 from winsound import Beep
 
+
 timeZero = time()
+""" Simple profiling. """
 
 plt.ioff
 """ Suppressing graph output to the iPython console. There likely will be way
@@ -42,7 +45,7 @@ frameNumber = numberReferenceImages
 soundOn = True
 """ A beep is emitted upon request for input and upon script completion. """
 
-gridNumber = 50
+gridNumber = 40
 """ The number of grid cells applied to the images for analysis in the 
     x and y directions. The number of cells overall is gridNumber^2. """
     
@@ -65,23 +68,27 @@ plotWidth = 4
 
 """ IMPORT IMAGES """
 
-imagePath = ('I:\\PLIF\\test 99')
-""" Directory containing images for analysis. """
+rootDirectory = ('I:\\PLIF\\test 12b')
+""" Directory containing experiment images and calibration. """
 
-figurePath = imagePath + '\\' + plotPath
+figurePath = rootDirectory + '\\' + plotPath
 """ Directory for result figures to be saved. """
 
 if not os.path.exists(figurePath):
     os.makedirs(figurePath)
 
+imageDirectories = pt.experimentDirectory(rootDirectory, '', 'cal')
+
+imagePath = imageDirectories[0]
+calibPaths = imageDirectories[1]
 
 def imageImport(imagePath, gridNumber):
     """ Returns a list of all image objects with the path and the RGB averages
         of the gridNumber by gridNumber grid applied to those images. """
         
-    allImages = plif_tools.listImages(imagePath)
+    allImages = pt.listImages(imagePath)
 
-    allImageAverages = plif_tools.gridAverage(allImages, gridNumber)
+    allImageAverages = pt.gridAverage(allImages, gridNumber)
     
     return allImages, allImageAverages
 
@@ -109,8 +116,9 @@ def getAspectRatio(imagePath, decimalPoint = 1):
    
 aspectRatio = getAspectRatio(allImages[0])
 
-importTime = time() - timeZero
-print('Import time: {} s.'.format(importTime))
+timeImport = round(time() - timeZero, 0)
+print('Import time: {} s.'.format(timeImport))
+""" Profiling. """
 
 
 """ REFERENCE VALUES AND CALIBRATION """
@@ -119,23 +127,20 @@ meanReferenceAverages = np.mean(referenceAverages)
 """ Take the average of each grid square over the collection of calibration
     images. """
     
-calibTemperatures = ['25', '30', '35', '40', '45', '50']
+calibTemperatures = [path[-2:] for path in calibPaths]   
 intTemperatures = [int(temp) for temp in calibTemperatures]
-
-calibPaths = [imagePath + '\\' + temp for temp in calibTemperatures]
-""" TODO: Have this list subfolders within the imagePath and use those as
-    calibration temperatures. Should be a function. """
+""" Read the calibration temperatures from the calibration folder names, and
+    for convenience create a list of integer values of those temperatures. """
   
 calibRange = [[calibTemperatures[i], calibTemperatures[i+1],
                intTemperatures[i] - intTemperatures[i+1]] 
                for i in range(len(calibTemperatures)-1)]
 """ Pairs of temperatures and the difference between each pair. """
 
-calibImageSets = [plif_tools.listImages(path) for path in calibPaths]
+calibImageSets = [pt.listImages(path) for path in calibPaths]
 
-calibAverages = plif_tools.getCalibrationAverages(calibImageSets, 
-                                                  calibTemperatures, 
-                                                  gridNumber)
+calibAverages = pt.getCalibrationAverages(calibImageSets, calibTemperatures, 
+                                          gridNumber)
 
 gridSlopesSet = [np.mean(calibAverages.ix[temp[0]] - calibAverages.ix[temp[1]]) 
                  / temp[2] for temp in calibRange]
@@ -143,8 +148,9 @@ gridSlopesSet = [np.mean(calibAverages.ix[temp[0]] - calibAverages.ix[temp[1]])
 gridSlopes = np.mean(pd.DataFrame(gridSlopesSet))
 """ TODO: This is awful to read. """
 
-calibrationTime = time() - importTime
-print('Calibration time: {} s.'.format(calibrationTime))
+timeCalibration = round(time() - timeImport - timeZero, 0)
+print('Calibration time: {} s.'.format(timeCalibration))
+""" Profiling. """
 
 
 """ CALCULATING TEMPERATURE """
@@ -198,8 +204,7 @@ for index, row in (plotTemperatures).iterrows():
     if frameNumber > frameLimit: 
         print('Frame limit reached.')        
         break
-    """ Iterating over the frames, and escaping the loop if the frame limit
-        is exceeded. """
+    """ Iterating over the frames. Ends the loop if past the frame limit. """
 
     frameTitle = 'Frame {}'.format(frameNumber - 1)
     """ Title of each plot corresponds to its frame number in video. """
@@ -224,7 +229,12 @@ for index, row in (plotTemperatures).iterrows():
     """ Save the figure within a subfolder of the initial directory, and then
         clear the figure for the next plot. """
 
+timeComplete = round(time() - timeZero, 0)
+print('Completed in {} s.'.format(timeComplete))
+""" Profiling. """
+
 if soundOn:
     Beep(600, 500)
+
 
 """ End of file """

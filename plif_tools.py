@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-PLIF Temperature Calculator
+PLIF Toolset
     Created on Thu Jan 21 13:56:54 2016
 
     @author: Darren Banks
-
-v0.1_2016.02.02
 
 PLIF Temperature Calculator uses grayscale-average values from video recording
 of rhodamine fluorescence to estimate the temperature field from the images.
@@ -62,16 +60,31 @@ def experimentDirectory(rootDirectory, primeDirectory = 'images', subDirectory =
         'images', and that any subfolders with the word 'calibration' in their
         names contain calibration images. """
         
-    rootPath = rootDirectory + '\\'
+    if rootDirectory != primeDirectory and primeDirectory != '':
+        """ If rootDirectory and primeDirectory are not the same, the prime
+            should be a subfolder of root and the subDirectories contained
+            within the prime. """
+        
+        rootPath = rootDirectory + '\\'
     
-    dirInRoot = [rootPath + entry for entry in os.listdir(rootDirectory)
-                 if os.path.isdir(rootPath + entry)]
-                     
-    imageDir = [entry for entry in dirInRoot if primeDirectory in entry]
-    
-    imageDir.append([rootPath + primeDirectory + '\\'  + entry 
+        imageDir = [rootPath + entry for entry in os.listdir(rootDirectory)
+                    if os.path.isdir(rootPath + entry) 
+                    if primeDirectory in entry]
+        """ Creates imageDir, the directory within the rootDirectory that
+            contains the name listed in primeDirectory. """
+            
+    elif rootDirectory == primeDirectory or primeDirectory == '':
+        """ If rootDirectory and primeDirectory are the same, or primeDirectory
+            is specified as an empty string, the images are located within the
+            rootDirectory itself. """
+        
+        imageDir = [rootDirectory]
+
+    imageDir.append([imageDir[0] + '\\'  + entry 
                      for entry in os.listdir(imageDir[0])
                      if subDirectory in entry])
+    """ Appends a sublist of folders to the second entry in imageDir, which
+        are the subfolders containing subDirectory name. """
                          
     return imageDir
 
