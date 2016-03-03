@@ -37,7 +37,7 @@ numberReferenceImages = 100
 """ Number of frames used to establish baseline fluorescence at each location
     within the images. """
     
-frameNumber = numberReferenceImages
+frameNumber = 0
 """ A counting variable used while iterating and plotting. No plots are
     produced for calibration frames, so the iteration starts at the first 
     non-calibration frame. """
@@ -48,6 +48,10 @@ soundOn = True
 gridNumber = 40
 """ The number of grid cells applied to the images for analysis in the 
     x and y directions. The number of cells overall is gridNumber^2. """
+    
+wantPlots = True
+""" If wantPlots is False, the temperature surface plots will not be produced.
+    Generally a time-saving value if False, for most use should be true. """
     
 plotLimitRequest = False
 """ If plotLimitRequest is false, the code uses preset values of 25 and 250 as
@@ -62,8 +66,16 @@ plotType = '.png'
 resultsName = 'temperatures.xlsx'
 """ Name of MS Excel file to save results. """
 
+statsName = 'statistics.xlsx'
+""" Name of MS Excel file to save summarizing statistics. """
+
 plotWidth = 4
 """ The base width for output plots to be saved. Units of inches. """
+
+plt.rc('font', family='serif') 
+plt.rc('font', serif='Times New Roman') 
+""" Set the default font for plotting to Times New Roman, so it matches that
+    used in the paper. """
 
 
 """ IMPORT IMAGES """
@@ -178,7 +190,9 @@ figAnalysis = plt.figure()
 """ Plotting and saving the maximum temperature in each frame. """
 maxTemperatures = pd.Series([max(T) for i, T in plotTemperatures.iterrows()])
 plt.plot(maxTemperatures)
-plt.title('Maximum temperature per frame.')
+plt.title('Maximum temperature per frame.', fontname = 'Times New Roman')
+plt.ylabel('Deg. C')
+plt.xlabel('Frame')
 plt.savefig(imagePath + '\\max_temperatures' + plotType, dpi = 100)
 plt.clf()
 
@@ -187,6 +201,8 @@ meanTemperatures = pd.Series([np.mean(T)
                               for i, T in plotTemperatures.iterrows()])
 plt.plot(meanTemperatures)
 plt.title('Average temperature per frame.')
+plt.ylabel('Deg. C')
+plt.xlabel('Frame')
 plt.savefig(imagePath + '\\mean_temperatures' + plotType, dpi = 100)
 plt.clf()
 
@@ -195,6 +211,8 @@ deviationTemperatures = pd.Series([np.std(T)
                                    for i, T in plotTemperatures.iterrows()])
 plt.plot(deviationTemperatures)
 plt.title('Standard deviation in temperature per frame.')
+plt.ylabel('Deg. C')
+plt.xlabel('Frame')
 plt.savefig(imagePath + '\\std_dev_temperatures' + plotType, dpi = 100)
 plt.clf()
 
@@ -204,62 +222,66 @@ print('Median value: {}'.format(np.median(plotTemperatures.median())))
 print('{} frames'.format(len(imageAverages)))
 """ Report the statistics for the user to be able to set the plot limits. """
 
+thermalStatsList = [maxTemperatures, meanTemperatures, deviationTemperatures]
+thermalStatistics = pd.concat(thermalStatsList, keys= ['max', 'mean', 's.dev'])
+thermalStatistics.to_frame().to_excel(imagePath + '\\' + statsName)
+
     
 """ PLOTTING TEMPERATURE """
+if wantPlots:
+    if plotLimitRequest:
+        zMinimum = float(input('Min graph? '))
+        zMaximum = float(input('Max graph? '))
+    else:
+        zMinimum = 25
+        zMaximum = 100
+        """ User sets the graph maximum and minimum temperature values. """
 
-if plotLimitRequest:
-    zMinimum = float(input('Min graph? '))
-    zMaximum = float(input('Max graph? '))
-else:
-    zMinimum = 25
-    zMaximum = 100
-""" User sets the graph maximum and minimum temperature values. """
+    if zMinimum > zMaximum:
+        zMinimum, zMaximum = zMaximum, zMinimum
+        """ Corrects if the upper limit of the graph is lower than the lower limit. """
 
-if zMinimum > zMaximum:
-    zMinimum, zMaximum = zMaximum, zMinimum
-""" Corrects if the upper limit of the graph is lower than the lower limit. """
+    plotRange = np.arange(gridNumber)
+    xGrid, yGrid = np.meshgrid(plotRange, plotRange)
+    """ Setting up the X and Y array for plotting purposes. """
 
-plotRange = np.arange(gridNumber)
-xGrid, yGrid = np.meshgrid(plotRange, plotRange)
-""" Setting up the X and Y array for plotting purposes. """
+    temperatureIntervals = np.arange(zMinimum, zMaximum, 1)
+    """ The temperature range for the graph to use in scaling its color map. """
 
-temperatureIntervals = np.arange(zMinimum, zMaximum, 1)
-""" The temperature range for the graph to use in scaling its color map. """
+    fig = plt.figure(figsize = (plotWidth, plotWidth/aspectRatio))
 
-fig = plt.figure(figsize = (plotWidth, plotWidth/aspectRatio))
+    for index, row in (plotTemperatures).iterrows():
 
-for index, row in (plotTemperatures).iterrows():
-
-    frameTitle = 'Frame {}'.format(frameNumber - 1)
-    """ Title of each plot corresponds to its frame number in video. """
+        frameTitle = 'Frame {}'.format(frameNumber - 1)
+        """ Title of each plot corresponds to its frame number in video. """
     
-    plotTemperatureArray = np.reshape(row, (gridNumber, gridNumber))
-    """ plotTemperatureArray is the calculated temperature for a 3-D surface
-        plot. It takes the row of the temperature dataFrame and fits it to the
-        x- and y-grid set on the image during analysis. """
+        plotTemperatureArray = np.reshape(row, (gridNumber, gridNumber))
+        """ plotTemperatureArray is the calculated temperature for a 3-D surface
+            plot. It takes the row of the temperature dataFrame and fits it to the
+            x- and y-grid set on the image during analysis. """
 
-    plt.contourf(xGrid, yGrid, plotTemperatureArray, temperatureIntervals, 
-                 cmap = 'jet', vmin = zMinimum, vmax = zMaximum, extend='both')            
-    plt.title(frameTitle)
-    plt.xticks(np.arange(0, gridNumber, 1))
-    plt.yticks(np.arange(0, gridNumber, 1))
-    plt.colorbar()
-    plt.grid(color = 'k', linestyle = 'solid', which='both')
-    """ Creating and formatting the plot with a colormap, the previously set
-        Z limits, ticks with intervals of 1, and a black grid. """
+        plt.contourf(xGrid, yGrid, plotTemperatureArray, temperatureIntervals, 
+                     cmap = 'jet', vmin = zMinimum, vmax = zMaximum, extend='both')            
+        plt.title(frameTitle)
+        plt.xticks(np.arange(0, gridNumber, 1))
+        plt.yticks(np.arange(0, gridNumber, 1))
+        plt.colorbar()
+        plt.grid(color = 'k', linestyle = 'solid', which='both')
+        """ Creating and formatting the plot with a colormap, the previously set
+            Z limits, ticks with intervals of 1, and a black grid. """
 
-    plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 100)
-    plt.clf()
+        plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 100)
+        plt.clf()
     
-    frameNumber += 1
-    if np.mod(frameNumber, 100) == 0:
-        print('Frame {}'.format(frameNumber))
-    if frameNumber > frameLimit: 
-        print('Frame limit reached.')        
-        break
-    """ Iterating over the frames. Ends the loop if past the frame limit. """
-    """ Save the figure within a subfolder of the initial directory, and then
-        clear the figure for the next plot. """
+        frameNumber += 1
+        if np.mod(frameNumber, 100) == 0:
+            print('Frame {}'.format(frameNumber))
+        if frameNumber > frameLimit: 
+            print('Frame limit reached.')        
+            break
+        """ Iterating over the frames. Ends the loop if past the frame limit. """
+        """ Save the figure within a subfolder of the initial directory, and then
+            clear the figure for the next plot. """
 
 
 """ CLEANUP """

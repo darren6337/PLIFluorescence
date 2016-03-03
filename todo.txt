@@ -1,0 +1,3 @@
+To-do for PLIFluorescence Code
+
+1. Vectorize the image analysis code. Should be able to make it run significantly faster.
