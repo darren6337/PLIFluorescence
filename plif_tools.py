@@ -136,8 +136,10 @@ def gridAverage(images, gridNum = 32):
         imageAverageList.append(gridAvgs)
         """ imageAverageList collects the averages of each analyzed image. """
     
-    if np.mod(width, gridNum) != 0: 
-        warn('Grid does not contain all pixels. Some will be omitted.')
+#    if np.mod(width, gridNum) != 0: 
+#        warn('Grid does not contain all pixels. Some will be omitted.')
+#   USE THIS SECTION TO ADD GRID SQUARES TO THE EXCESS AREA - THEY WILL BE A
+#   DIFFERENT SIZE THAN THE REST BUT THAT IS OKAY.
     
     imageAverages = pd.DataFrame(imageAverageList)
     

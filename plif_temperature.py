@@ -45,7 +45,7 @@ frameNumber = 0
 soundOn = True
 """ A beep is emitted upon request for input and upon script completion. """
 
-gridNumber = 40
+gridNumber = 20
 """ The number of grid cells applied to the images for analysis in the 
     x and y directions. The number of cells overall is gridNumber^2. """
     
@@ -57,16 +57,16 @@ plotLimitRequest = False
 """ If plotLimitRequest is false, the code uses preset values of 25 and 250 as
     the minimum and maximum values of the z-axis when plotting results. """
     
-plotPath = 'figures'
+plotPath = 'figures 2'
 """ The folder name that will contain plotted temperatures after code runs. """
 
 plotType = '.png'
 """ Image file extension for saving results. """
 
-resultsName = 'temperatures.xlsx'
+resultsName = 'temperatures 2.xlsx'
 """ Name of MS Excel file to save results. """
 
-statsName = 'statistics.xlsx'
+statsName = 'statistics 2.xlsx'
 """ Name of MS Excel file to save summarizing statistics. """
 
 plotWidth = 4
@@ -80,7 +80,7 @@ plt.rc('font', serif='Times New Roman')
 
 """ IMPORT IMAGES """
 
-rootDirectory = ('I:\\PLIF\\test 12b')
+rootDirectory = ('I:\\PLIF\\test 14_5_1')
 """ Directory containing experiment images and calibration. """
 
 figurePath = rootDirectory + '\\' + plotPath
@@ -234,7 +234,7 @@ if wantPlots:
         zMaximum = float(input('Max graph? '))
     else:
         zMinimum = 25
-        zMaximum = 100
+        zMaximum = 150
         """ User sets the graph maximum and minimum temperature values. """
 
     if zMinimum > zMaximum:
@@ -248,7 +248,7 @@ if wantPlots:
     temperatureIntervals = np.arange(zMinimum, zMaximum, 1)
     """ The temperature range for the graph to use in scaling its color map. """
 
-    fig = plt.figure(figsize = (plotWidth, plotWidth/aspectRatio))
+    fig = plt.figure(figsize = (2.5*plotWidth*0.5, 0.5*plotWidth/aspectRatio))
 
     for index, row in (plotTemperatures).iterrows():
 
@@ -270,7 +270,7 @@ if wantPlots:
         """ Creating and formatting the plot with a colormap, the previously set
             Z limits, ticks with intervals of 1, and a black grid. """
 
-        plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 100)
+        plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 50)
         plt.clf()
     
         frameNumber += 1
