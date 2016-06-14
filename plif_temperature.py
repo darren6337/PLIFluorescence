@@ -10,307 +10,260 @@ based on the intensity at which the rhodamine fluoresces under planar laser
 irradiation. plif_temperature requires the module plif_tools to run.
 """
 
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+from os import makedirs
+from os.path import exists
 import pandas as pd
-import PIL as pil
 import plif_tools as pt
-from time import time
 
 
-timeZero = time()
-""" Simple profiling. 
-    """
+""" Logging setup """
+
+logger = logging.getLogger('plif')
+logger.setLevel(logging.DEBUG)
+
+console_format = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s',
+                                   datefmt = '%H:%M:%S')
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(console_format)
+logger.addHandler(console_handler)
+""" Create console handler. """
+
+logfile = 'C:\\Users\\Darren\\Documents\\GitHub\\PLIFluorescence\\info.log'
+logfile_format = logging.Formatter('%(asctime)s %(name)-24s %(levelname)-8s %(message)s', 
+                                   datefmt = '%Y-%m-%d %H:%M:%S')
+file_handler = logging.FileHandler(logfile)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logfile_format)
+logger.addHandler(file_handler)
+""" Create logging file handler. """
+
+logger.debug('Starting.')
 
 plt.ioff
-""" Suppressing graph output to the iPython console. There will be 
-    too many graphs produced to display each efficiently.
-    """
+""" Suppressing graph output to the iPython console. """
 
 
-""" Literals
-    """
+""" Literals """
 
-numberReferenceImages = 100   
-""" Number of frames used to establish baseline fluorescence at
-    each location within the images. 
+num_reference_images = 100   
+""" Number of frames to establish base fluorescence within images. """
+
+grid_number = 40
+""" Number of grid cells applied to the images for analysis.
+    The number of cells overall is grid_number^2. 
     """
     
-frameNumber = 0
-""" A counting variable used while iterating and plotting. No
-    plots are produced for calibration frames, so the iteration
-    starts at the first non-calibration frame. 
-    """
-
-gridNumber = 40
-""" The number of grid cells applied to the images for analysis 
-    in the x and y directions. The number of cells overall is 
-    gridNumber^2. 
+want_plots = True
+""" If want_plots is False, the temperature surface plots will 
+    not be produced. Generally a time-saving value if False.
     """
     
-wantPlots = True
-""" If wantPlots is False, the temperature surface plots will 
-    not be produced. Generally a time-saving value if False,
-    for most use should be true.
-    """
-    
-plotLimitRequest = False
-""" If plotLimitRequest is false, the code uses preset values 
-    of 25 and 250 as the minimum and maximum values of the 
-    z-axis when plotting results.
-    
-    Can probably be discarded.
-    """
-    
-plotPath = 'figures 2'
-""" The folder name that will contain plotted temperatures 
-    after code runs. 
-    """
+plot_path = 'figures 2'
+""" The folder name that will contain temperatures plots. """
 
-plotType = '.png'
-""" Image file extension for saving results. 
-    """
+plot_type = '.png'
+""" Image file extension for saving results. """
 
-resultsName = 'temperatures 2.xlsx'
-""" Name of MS Excel file to save results. 
-    """
+results = 'temperatures 2.xlsx'
+""" Name of MS Excel file to save results. """
 
-statsName = 'statistics 2.xlsx'
-""" Name of MS Excel file to save summarizing statistics.
-    """
+statistics = 'statistics 2.xlsx'
+""" Name of MS Excel file to save summarizing statistics. """
 
-plotWidth = 4
-""" The base width for output plots to be saved. Units of inches. 
-    """
+plot_width = 4
+""" The base width in inches for output plots. """
 
-plt.rc('font', family='serif') 
-plt.rc('font', serif='Times New Roman')
-plt.rc('font', size = 36.0)
+plt.rc('font', family = 'serif', size = 24.0, serif = 'Times New Roman') 
 """ Set the default font for plotting to Times New Roman, so it
     matches that used in the paper. 
     """
 
 
-""" IMPORT IMAGES """
+""" Image import """
 
-rootDirectory = ('I:\\PLIF\\test 11\\images 2 - Copy')
-""" Directory containing experiment images and calibration.
-    """
+root_directory = ('I:\\PLIF\\test 11\\images 2 - Copy')
 
-figurePath = rootDirectory + '\\' + plotPath
-""" Directory for result figures to be saved. 
-    """
+logger.info('Directory: ' + root_directory)
+""" Directory containing experiment images and calibration. """
 
-if not os.path.exists(figurePath):
-    os.makedirs(figurePath)
+figure_path = root_directory + '\\' + plot_path
+""" Directory for result figures to be saved. """
 
-imageDirectories = pt.experimentDirectory(rootDirectory, '', 'cal')
+if not exists(figure_path):
+    makedirs(figure_path)
 
-imagePath = imageDirectories[0]
-calibPaths = imageDirectories[1]
+image_directories = pt.exptDirectory(root_directory, '', 'cal')
 
-def imageImport(imagePath, gridNumber):
-    """ Returns a list of all image objects with the path and the 
-        RGB averages of the gridNumber by gridNumber grid applied 
-        to those images. 
-        """
-        
-    allImages = pt.listImages(imagePath)
+image_path = image_directories[0]
+calib_paths = image_directories[1]
 
-    allImageAverages = pt.gridAverage(allImages, gridNumber)
-    
-    return allImages, allImageAverages
+all_images = pt.listImages(image_path)
 
-    
-allImages, allAverages = imageImport(imagePath, gridNumber)
+all_averages = pt.gridAverage(all_images, grid_number)
 
-referenceAverages = allAverages[:numberReferenceImages]
-imageAverages = allAverages[numberReferenceImages:]
-""" Take the RGB mean value for the collections of images with 
-    regard to each grid square. 
-    """
+reference_averages = all_averages[:num_reference_images]
+image_averages = all_averages[num_reference_images:]
+logger.debug('First {} images used as reference'.format(num_reference_images))
+""" Take the RGB mean value for the images in each grid square. """
 
+aspect_ratio = pt.getAspectRatio(all_images[0])
 
-def getAspectRatio(imagePath, decimalPoint = 1):
-    """ Returns the input image's aspect ratio (width/height)
-        rounded to a default of 1 decimal point. 
-        """
-        
-    referenceImage = pil.Image.open(imagePath)
-
-    imageWidth, imageHeight = referenceImage.size
-
-    aspectRatio = round(imageWidth/imageHeight, 1)
-    
-    return aspectRatio
- 
-   
-aspectRatio = getAspectRatio(allImages[0])
-
-timeImport = round(time() - timeZero, 0)
-print('Import time: {} s.'.format(timeImport))
-""" Profiling. 
-"""
+logger.debug('File import complete')
 
 
 """ Calibration of intensity to temperature """
 
-meanReferenceAverages = np.mean(referenceAverages)
+mean_reference_averages = np.mean(reference_averages)
 """ Take the average of each grid square over the collection of
     calibration images.
     """
     
-calibTemperatures = [path[-2:] for path in calibPaths]   
-intTemperatures = [int(temp) for temp in calibTemperatures]
+calib_temperatures = [path[-2:] for path in calib_paths]   
+int_temperatures = [int(temp) for temp in calib_temperatures]
 """ Read the calibration temperatures from the calibration folder 
     names, and for convenience create a list of integer values of 
     those temperatures. 
     """
   
-calibRange = [[calibTemperatures[i], calibTemperatures[i+1],
-               intTemperatures[i] - intTemperatures[i+1]] 
-               for i in range(len(calibTemperatures)-1)]
-""" Pairs of temperatures and the difference between each pair.
-    """
+calib_range = [[calib_temperatures[i], calib_temperatures[i+1],
+                int_temperatures[i] - int_temperatures[i+1]] 
+                for i in range(len(calib_temperatures)-1)]
+""" Pairs of temperatures and the difference between each pair. """
 
-calibImageSets = [pt.listImages(path) for path in calibPaths]
-""" Gather the images located in the calibration directories. 
-    """
+calib_image_sets = [pt.listImages(path) for path in calib_paths]
+""" Gather the images located in the calibration directories. """
 
-calibAverages = pt.getCalibrationAverages(calibImageSets, calibTemperatures, 
-                                          gridNumber)
+calib_averages = pt.getCalibrationAverages(calib_image_sets, 
+                                           calib_temperatures, 
+                                           grid_number)
 """ Apply the grid and get RGB averages for each calibration 
     temperature. 
     """
 
-gridSlopesSet = [np.mean(calibAverages.ix[temp[0]] - calibAverages.ix[temp[1]]) 
-                 / temp[2] for temp in calibRange]                         
-gridSlopes = np.mean(pd.DataFrame(gridSlopesSet))
+grid_slopes_set = [np.mean(calib_averages.ix[temp[0]] - 
+                           calib_averages.ix[temp[1]]) 
+                   / temp[2] for temp in calib_range]
+                   
+grid_slopes = np.mean(pd.DataFrame(grid_slopes_set))
 """ The slope is defined as the change in intensity divided by
     the change in temperature. The average delta-I / delta-T 
     for each grid square over all temperatures is used to provide
     a slope value of that square.
     """
 
-timeCalibration = round(time() - timeImport - timeZero, 0)
-print('Calibration time: {} s.'.format(timeCalibration))
-""" Profiling. 
-    """
+logger.debug('Temperature calibration complete.')
 
 
-""" Calculating temperature 
-    """
+""" Calculating temperature """
 
-deltaIntensity = imageAverages - meanReferenceAverages
+delta_intensity = image_averages - mean_reference_averages
 
-plotTemperatures = deltaIntensity / gridSlopes + intTemperatures[0]
+delta_temperature = delta_intensity / grid_slopes
+
+delta_temperature.to_excel(image_path+'\\temperature_deltas.xlsx')
+
+plot_temperatures = delta_intensity / grid_slopes + int_temperatures[0]
 """ Calculate the temperature based on the difference between the 
     calibration and the image's grid RGB averages. 
     """
     
-plotTemperatures.to_excel(imagePath + '\\' + resultsName)
-""" Save the calculated temperatures for analysis. 
-    """
+plot_temperatures.to_excel(image_path + '\\' + results)
+""" Save the calculated temperatures for analysis. """
     
 
 """ Analysis, showing statistics on results. """
 
-figAnalysis = plt.figure()
+fig_analysis = plt.figure()
 
-""" Plotting and saving the maximum temperature in each frame.
-    """
-maxTemperatures = pd.Series([max(T) for i, T in plotTemperatures.iterrows()])
-plt.plot(maxTemperatures)
+""" Maximum temperature in each frame. """
+max_temperatures = pd.Series([max(T) for i, T in plot_temperatures.iterrows()])
+
+plt.plot(max_temperatures)
 plt.title('Maximum temperature per frame.', fontname = 'Times New Roman')
 plt.ylabel('Deg. C')
 plt.xlabel('Frame')
-plt.savefig(imagePath + '\\max_temperatures' + plotType, dpi = 100)
+plt.savefig(image_path + '\\max_temperatures' + plot_type, dpi = 100)
 plt.clf()
 
-""" Plotting and saving the average temperature in each frame. 
-    """
-meanTemperatures = pd.Series([np.mean(T) 
-                              for i, T in plotTemperatures.iterrows()])
-plt.plot(meanTemperatures)
+""" Average temperature in each frame. """
+mean_temperatures = pd.Series([np.mean(T) 
+                               for i, T in plot_temperatures.iterrows()])
+                                   
+plt.plot(mean_temperatures)
 plt.title('Average temperature per frame.')
 plt.ylabel('Deg. C')
 plt.xlabel('Frame')
-plt.savefig(imagePath + '\\mean_temperatures' + plotType, dpi = 100)
+plt.savefig(image_path + '\\mean_temperatures' + plot_type, dpi = 100)
 plt.clf()
 
-""" Plotting and saving standard deviation of temperature in each frame. 
-    """
-deviationTemperatures = pd.Series([np.std(T) 
-                                   for i, T in plotTemperatures.iterrows()])
-plt.plot(deviationTemperatures)
+""" Standard deviation of temperature in each frame. """
+deviation_temperatures = pd.Series([np.std(T) 
+                                    for i, T in plot_temperatures.iterrows()])
+                                        
+plt.plot(deviation_temperatures)
 plt.title('Standard deviation in temperature per frame.')
 plt.ylabel('Deg. C')
 plt.xlabel('Frame')
-plt.savefig(imagePath + '\\std_dev_temperatures' + plotType, dpi = 100)
+plt.savefig(image_path + '\\std_dev_temperatures' + plot_type, dpi = 100)
 plt.clf()
 
-print('Maximum value: {}'.format(max(plotTemperatures.max())))
-print('Minimum value: {}'.format(min(plotTemperatures.min())))
-print('Median value: {}'.format(np.median(plotTemperatures.median())))
-print('{} frames'.format(len(imageAverages)))
-""" Report the statistics for the user to be able to set the plot limits. 
-    """
+logger.info('Maximum: {}'.format(round(max(plot_temperatures.max()))))
+logger.info('Minimum: {}'.format(round(min(plot_temperatures.min()))))
+logger.info('Median: {}'.format(round(np.median(plot_temperatures.median()))))
+logger.debug('{} frames to be analyzed'.format(len(plot_temperatures)))
 
-thermalStatsList = [maxTemperatures, meanTemperatures, deviationTemperatures]
-thermalStatistics = pd.concat(thermalStatsList, keys= ['max', 'mean', 's.dev'])
-thermalStatistics.to_frame().to_excel(imagePath + '\\' + statsName)
+if min(plot_temperatures.min()) < 25:
+    logger.warn('Subcooled, possibly erroneous temperatures found')
+""" Report the temperature statistics. """
+
+thermal_stats_list = [max_temperatures, mean_temperatures, 
+                      deviation_temperatures]
+thermal_statistics = pd.concat(thermal_stats_list,
+                               keys= ['max', 'mean', 's.dev'])
+thermal_statistics.to_frame().to_excel(image_path + '\\' + statistics)
 
     
-""" Plot temperature contour.
-    """
-if wantPlots:
-    if plotLimitRequest:
-        zMinimum = float(input('Min graph? '))
-        zMaximum = float(input('Max graph? '))
-    else:
-        zMinimum = 25
-        zMaximum = 100
-        """ User sets the graph maximum and minimum temperature values.
-            """
+""" Plot temperature contour. """
 
-    if zMinimum > zMaximum:
-        zMinimum, zMaximum = zMaximum, zMinimum
-        """ Corrects if the upper limit of the graph is lower than 
-            the lower limit.
-            """
+if want_plots:
+    
+    z_minimum = 25
+    z_maximum = 100
+    """ User sets the graph maximum and minimum temperature values. """
 
-    plotRange = np.arange(gridNumber)
-    xGrid, yGrid = np.meshgrid(plotRange, plotRange)
-    """ Setting up the X and Y array for plotting purposes. 
-        """
+    plot_range = np.arange(grid_number)
+    x_grid, y_grid = np.meshgrid(plot_range, plot_range)
+    """ Setting up the X and Y array for plotting purposes. """
 
-    temperatureIntervals = np.arange(zMinimum, zMaximum, 1)
+    temperature_intervals = np.arange(z_minimum, z_maximum, 1)
     """ The temperature range for the graph to use in scaling its
         color map.
         """
 
-    fig = plt.figure(figsize = (2.5*plotWidth, 2.0*plotWidth/aspectRatio))
+    fig = plt.figure(figsize = (2.5*plot_width, 2.0*plot_width/aspect_ratio))
 
-    for index, row in (plotTemperatures).iterrows():
+    for index, row in plot_temperatures.iterrows():
 
-        frameTitle = 'Frame {}'.format(frameNumber - 1)
-        """ Title of each plot corresponds to its frame number in video. 
-            """
+        frame_title = 'Frame {}'.format(index-99)
+        """ Title of each plot corresponds to its frame number in video. """
     
-        plotTemperatureArray = np.reshape(row, (gridNumber, gridNumber))
+        plot_temperature_array = np.reshape(row, (grid_number, grid_number))
         """ plotTemperatureArray is the calculated temperature for a 
             3-D surface plot. It takes the row of the temperature 
             dataFrame and fits it to the x- and y-grid set on the 
             image during analysis. 
             """
 
-        plt.contourf(xGrid, yGrid, plotTemperatureArray, temperatureIntervals, 
-                     cmap = 'jet', vmin = zMinimum, vmax = zMaximum, 
-                     extend='both')            
-        plt.title(frameTitle)
-        plt.xticks(np.arange(0, gridNumber, 1))
-        plt.yticks(np.arange(0, gridNumber, 1))
+        plt.contourf(x_grid, y_grid, plot_temperature_array, 
+                     temperature_intervals, cmap = 'jet', extend='both',
+                     vmin = z_minimum, vmax = z_maximum)            
+        plt.title(frame_title)
+        plt.xticks(np.arange(0, grid_number, 1))
+        plt.yticks(np.arange(0, grid_number, 1))
         plt.colorbar()
         plt.grid(color = 'k', linestyle = 'solid', which='both')
         """ Creating and formatting the plot with a colormap, the 
@@ -321,18 +274,14 @@ if wantPlots:
         """ Save the figure within a subfolder of the initial 
             directory, and then clear the figure. 
             """
-        plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi = 50)
+        plt.savefig(figure_path + '\\' + frame_title + plot_type, dpi = 50)
         plt.clf()
     
-        frameNumber += 1
-        if np.mod(frameNumber, 100) == 0:
-            print('Frame {}'.format(frameNumber))
-        """ Iterating over the frames. 
-            """
+        if np.mod(index-99, 100) == 0:
+            logger.debug('Frame {} graphed'.format(index-99))
+        """ Iterating over the frames. """
+        
+plt.close()
+plt.close()
 
-
-""" CLEANUP """
-
-timeComplete = round(time() - timeZero, 0)
-print('Completed in {} s.'.format(timeComplete))
-""" Profiling. """
+logger.info('Complete\n')

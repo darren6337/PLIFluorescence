@@ -1,0 +1,30 @@
+DATE       TIME     MODULE/FUNCTION          TYPE     MESSAGE
+----------------------------------------------------------------------------------------------------------------------
+2016-06-14 15:33:31 plif                     DEBUG    Starting.
+2016-06-14 15:33:31 plif                     INFO     Directory: I:\PLIF\test 11\images 2 - Copy
+2016-06-14 15:33:31 plif.tools.exptDirectory DEBUG    Images in I:\PLIF\test 11\images 2 - Copy
+2016-06-14 15:33:31 plif.tools.listImages    DEBUG    851 images loaded from I:\PLIF\test 11\images 2 - Copy
+2016-06-14 15:35:04 plif                     DEBUG    First 100 images used as reference
+2016-06-14 15:35:04 plif.tools.aspectRatio   DEBUG    Aspect ratio 0.5
+2016-06-14 15:35:04 plif                     DEBUG    File import complete
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 25
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 30
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 35
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 40
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 45
+2016-06-14 15:35:04 plif.tools.listImages    DEBUG    201 images loaded from I:\PLIF\test 11\images 2 - Copy\cal 50
+2016-06-14 15:36:56 plif                     DEBUG    Temperature calibration complete.
+2016-06-14 15:38:12 plif                     INFO     Maximum: 151.0
+2016-06-14 15:38:12 plif                     INFO     Minimum: -42.0
+2016-06-14 15:38:12 plif                     INFO     Median: 28.0
+2016-06-14 15:38:12 plif                     DEBUG    751 frames to be analyzed
+2016-06-14 15:38:12 plif                     WARNING  Subcooled, possibly erroneous temperatures found
+2016-06-14 15:39:35 plif                     DEBUG    Frame 100 graphed
+2016-06-14 15:41:06 plif                     DEBUG    Frame 200 graphed
+2016-06-14 15:42:41 plif                     DEBUG    Frame 300 graphed
+2016-06-14 15:44:26 plif                     DEBUG    Frame 400 graphed
+2016-06-14 15:46:04 plif                     DEBUG    Frame 500 graphed
+2016-06-14 15:47:54 plif                     DEBUG    Frame 600 graphed
+2016-06-14 15:49:44 plif                     DEBUG    Frame 700 graphed
+2016-06-14 15:50:43 plif                     INFO     Complete
+
