@@ -1,0 +1,65 @@
+DATE       TIME     MODULE/FUNCTION          TYPE     MESSAGE
+----------------------------------------------------------------------------------------------------
+2016-06-16 14:05:25 plif                     DEBUG    Starting.
+2016-06-16 14:05:25 plif                     INFO     Directory: I:\PLIF\test 11\images 2 - Copy
+2016-06-16 14:05:25 plif.tools.listImages    DEBUG    851 images loaded from ...\images 2 - Copy
+2016-06-16 14:06:33 plif                     DEBUG    First 100 images used as reference
+2016-06-16 14:06:33 plif.tools.aspectRatio   DEBUG    Aspect ratio 0.5
+2016-06-16 14:06:33 plif                     INFO     File import complete
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 25
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 30
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 35
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 40
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 45
+2016-06-16 14:06:33 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 50
+2016-06-16 14:08:19 plif                     INFO     Temperature calibration complete.
+2016-06-16 14:08:58 plif                     WARNING  Subcooled, possibly erroneous temperatures
+2016-06-16 14:09:33 plif.tools.getTempStats  INFO     Maximum: 151.0
+2016-06-16 14:09:33 plif.tools.getTempStats  INFO     Minimum: -42.0
+2016-06-16 14:09:33 plif.tools.getTempStats  INFO     Median: 28.0
+2016-06-16 14:09:33 plif.tools.getTempStats  DEBUG    751 frames to be analyzed
+2016-06-16 14:09:34 plif                     INFO     Temperatures not plotted.
+2016-06-16 14:09:34 plif                     INFO     Complete
+
+2016-06-16 14:28:46 plif                     DEBUG    Starting.
+2016-06-16 14:28:46 plif                     INFO     Directory: I:\PLIF\test 11\images 2 - Copy
+2016-06-16 14:28:46 plif.tools.listImages    DEBUG    851 images loaded from ...\images 2 - Copy
+2016-06-16 14:29:54 plif                     DEBUG    First 100 images used as reference
+2016-06-16 14:29:54 plif.tools.aspectRatio   DEBUG    Aspect ratio 0.5
+2016-06-16 14:29:54 plif                     INFO     File import complete
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 25
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 30
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 35
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 40
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 45
+2016-06-16 14:29:54 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 50
+2016-06-16 14:31:45 plif                     INFO     Temperature calibration complete.
+2016-06-16 14:32:29 plif                     WARNING  Subcooled, possibly erroneous temperatures
+2016-06-16 14:33:05 plif.tools.getTempStats  INFO     Maximum: 151.0
+2016-06-16 14:33:05 plif.tools.getTempStats  INFO     Minimum: -42.0
+2016-06-16 14:33:05 plif.tools.getTempStats  INFO     Median: 28.0
+2016-06-16 14:33:05 plif.tools.getTempStats  DEBUG    751 frames to be analyzed
+2016-06-16 14:33:05 plif                     INFO     Temperatures not plotted.
+2016-06-16 14:33:05 plif                     INFO     Complete
+
+2016-06-16 14:36:49 plif                     DEBUG    Starting.
+2016-06-16 14:36:49 plif                     INFO     Directory: I:\PLIF\test 11\images 2 - Copy
+2016-06-16 14:36:49 plif.tools.listImages    DEBUG    851 images loaded from ...\images 2 - Copy
+2016-06-16 14:38:04 plif                     DEBUG    First 100 images used as reference
+2016-06-16 14:38:04 plif.tools.aspectRatio   DEBUG    Aspect ratio 0.5
+2016-06-16 14:38:04 plif                     INFO     File import complete
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 25
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 30
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 35
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 40
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 45
+2016-06-16 14:38:04 plif.tools.listImages    DEBUG    201 images loaded from ... 2 - Copy\cal 50
+2016-06-16 14:40:05 plif                     INFO     Temperature calibration complete.
+2016-06-16 14:40:38 plif                     WARNING  Subcooled, possibly erroneous temperatures
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Maximum: 151.0
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Minimum: -42.0
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Median: 28.0
+2016-06-16 14:41:10 plif.tools.getTempStats  DEBUG    751 frames to be analyzed
+2016-06-16 14:41:11 plif                     INFO     Temperatures not plotted.
+2016-06-16 14:41:11 plif                     INFO     Complete
+
