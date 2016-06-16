@@ -1,0 +1,7 @@
+To-do for PLIFluorescence Code
+
+1. Vectorize the image analysis code. Should be able to make it run significantly faster.
+2. Add grid cells to edges of image - they will be different sizes than the rest of the uniform ones but we will not lose any data from the edges of the image. Will allow a lot more flexibility with gridnumbering too.
+3. Complementary to the previous to-do: calculate a cell size array and add it to the output, if the cells are different sizes we need to know that for our forthcoming bubble energy calculations.
+4. Bugfix - current grid is set up with floating point pixel numbers, which makes no sense; should be integers.
+5. Type-test to verify the imported images are operable with PIL.

@@ -1,0 +1,10 @@
+2016-06-16 14:36:49 plif                     INFO     Directory: I:\PLIF\test 11\images 2 - Copy
+2016-06-16 14:38:04 plif                     INFO     File import complete
+2016-06-16 14:40:05 plif                     INFO     Temperature calibration complete.
+2016-06-16 14:40:38 plif                     WARNING  Subcooled, possibly erroneous temperatures
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Maximum: 151.0
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Minimum: -42.0
+2016-06-16 14:41:10 plif.tools.getTempStats  INFO     Median: 28.0
+2016-06-16 14:41:11 plif                     INFO     Temperatures not plotted.
+2016-06-16 14:41:11 plif                     INFO     Complete
+

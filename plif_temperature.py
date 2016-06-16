@@ -1,230 +1,241 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb  3 16:51:48 2016
+PLIF Temperature Calculator
+    Created on Wed Feb  3 16:51:48 2016
 
-@author: Darren Banks
+    @author: Darren Banks
 
 plif_temperature calculates temperature in a plane of rhodamine-B solution
 based on the intensity at which the rhodamine fluoresces under planar laser
 irradiation. plif_temperature requires the module plif_tools to run.
 """
 
+
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import pandas as pd
-import PIL as pil
-import plif_tools
-from time import time
-from winsound import Beep
+from os import makedirs
+from os.path import exists
+import plif_tools as pt
+import sys
 
-timeZero = time()
+
+""" Logging setup """
+
+logger = logging.getLogger('plif')
+logger.setLevel(logging.DEBUG)
+
+con_format = '%(asctime)s - %(name)s -  %(levelname)-8s: %(message)s'
+console_format = logging.Formatter(con_format, datefmt='%H:%M:%S')
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(console_format)
+logger.addHandler(console_handler)
+""" Create console handler. """
+
+log_file = 'C:\\Users\\Darren\\Documents\\GitHub\\PLIFluorescence\\debug.log'
+if not exists(log_file):
+    file = open(log_file, 'a')
+    file.close()
+
+log_format = '%(asctime)s %(name)-24s %(levelname)-8s %(message)s'
+logfile_format = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+
+file_handler = logging.FileHandler(log_file)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logfile_format)
+logger.addHandler(file_handler)
+""" Create debug logging file handler. """
+
+info_file = 'C:\\Users\\Darren\\Documents\\GitHub\\PLIFluorescence\\info.log'
+if not exists(info_file):
+    file = open(info_file, 'a')
+    file.close()
+
+info_handler = logging.FileHandler(info_file, mode='w')
+info_handler.setLevel(logging.INFO)
+info_handler.setFormatter(logfile_format)
+logger.addHandler(info_handler)
+""" Creating info logging file handler. """
+
+logger.debug('Starting.')
 
 plt.ioff
-""" Suppressing graph output to the iPython console. There likely will be way
-    too many graphs produced for that to be practical or time-efficient. """
+""" Suppressing graph output to the iPython console. """
 
 
-""" LITERALS AND TEST VALUES """
+""" Literals """
 
-frameLimit = 500
-""" Maximum number of frames to iterate over. """
+num_reference_images = 100
+""" Number of frames to establish base fluorescence within images. """
 
-numberReferenceImages = 100   
-""" Number of frames used to establish baseline fluorescence at each location
-    within the images. """
-    
-frameNumber = numberReferenceImages
-""" A counting variable used while iterating and plotting. No plots are
-    produced for calibration frames, so the iteration starts at the first 
-    non-calibration frame. """
-    
-soundOn = True
-""" A beep is emitted upon request for input and upon script completion. """
+grid_number = 40
+""" Number of grid cells applied to the images for analysis. """
 
-gridNumber = 50
-""" The number of grid cells applied to the images for analysis in the 
-    x and y directions. The number of cells overall is gridNumber^2. """
-    
-plotLimitRequest = False
-""" If plotLimitRequest is false, the code uses preset values of 25 and 250 as
-    the minimum and maximum values of the z-axis when plotting results. """
-    
-plotPath = 'figures'
-""" The folder name that will contain plotted temperatures after code runs. """
+want_plots = False
+""" If want_plots is False, the temperature surface plots will
+    not be produced. Generally a time-saving value if False.
+    """
 
-plotType = '.png'
+plot_path = 'figures 2'
+""" The folder name that will contain temperatures plots. """
+
+plot_type = '.png'
 """ Image file extension for saving results. """
 
-resultsName = 'temperatures.xlsx'
+results = 'temperatures 2.xlsx'
 """ Name of MS Excel file to save results. """
 
-plotWidth = 4
-""" The base width for output plots to be saved. Units of inches. """
+statistics = 'statistics 2.xlsx'
+""" Name of MS Excel file to save summarizing statistics. """
+
+plot_width = 4
+""" The base width in inches for output plots. """
+
+plt.rc('font', family='serif', size=24.0, serif='Times New Roman')
+""" Set the default font for plotting to Times New Roman, so it
+    matches that used in the paper.
+    """
 
 
-""" IMPORT IMAGES """
+""" Image import """
 
-imagePath = ('I:\\PLIF\\test 99')
-""" Directory containing images for analysis. """
+root_directory = ('I:\\PLIF\\test 11\\images 2 - Copy')
 
-figurePath = imagePath + '\\' + plotPath
+if not exists(root_directory):
+    logger.error('Experiment directory does not exist!')
+    sys.exit()
+
+logger.info('Directory: ' + root_directory)
+""" Directory containing experiment images and calibration. """
+
+figure_path = root_directory + '\\' + plot_path
 """ Directory for result figures to be saved. """
 
-if not os.path.exists(figurePath):
-    os.makedirs(figurePath)
+if not exists(figure_path):
+    makedirs(figure_path)
+
+[image_path, calib_paths] = pt.exptDirectory(root_directory, '', 'cal')
+
+all_images = pt.listImages(image_path)
+
+all_averages = pt.gridAverage(all_images, grid_number)
+
+reference_averages = all_averages[:num_reference_images]
+image_averages = all_averages[num_reference_images:]
+logger.debug('First {} images used as reference'.format(num_reference_images))
+""" Take the RGB mean value for the images in each grid square. """
+
+aspect_ratio = pt.getAspectRatio(all_images[0])
+
+logger.info('File import complete')
 
 
-def imageImport(imagePath, gridNumber):
-    """ Returns a list of all image objects with the path and the RGB averages
-        of the gridNumber by gridNumber grid applied to those images. """
-        
-    allImages = plif_tools.listImages(imagePath)
+""" Calibration of intensity to temperature """
 
-    allImageAverages = plif_tools.gridAverage(allImages, gridNumber)
-    
-    return allImages, allImageAverages
+mean_reference_averages = np.mean(reference_averages)
+""" Take the average of each grid square over the collection of
+    calibration images.
+    """
 
-    
-allImages, allAverages = imageImport(imagePath, gridNumber)
+calib_temperatures = [path[-2:] for path in calib_paths]
 
-referenceAverages = allAverages[:numberReferenceImages]
-imageAverages = allAverages[numberReferenceImages:]
-""" Taking the RGB mean value for the collections of images with regard to
-    each grid square. """
+calib_image_sets = [pt.listImages(path) for path in calib_paths]
+""" Gather the images located in the calibration directories. """
 
+calib_averages = pt.getCalibrationAverages(calib_image_sets,
+                                           calib_temperatures, grid_number)
+""" Apply grid and get RGB averages for each calibration temperature. """
 
-def getAspectRatio(imagePath, decimalPoint = 1):
-    """ Returns the input image's aspect ratio (width/height) rounded to a
-        default of 1 decimal point. """
-        
-    referenceImage = pil.Image.open(imagePath)
+grid_slopes = pt.getGridSlopes(calib_averages, calib_temperatures)
 
-    imageWidth, imageHeight = referenceImage.size
-
-    aspectRatio = round(imageWidth/imageHeight, 1)
-    
-    return aspectRatio
- 
-   
-aspectRatio = getAspectRatio(allImages[0])
-
-importTime = time() - timeZero
-print('Import time: {} s.'.format(importTime))
+logger.info('Temperature calibration complete.')
 
 
-""" REFERENCE VALUES AND CALIBRATION """
+""" Calculating temperature """
 
-meanReferenceAverages = np.mean(referenceAverages)
-""" Take the average of each grid square over the collection of calibration
-    images. """
-    
-calibTemperatures = ['25', '30', '35', '40', '45', '50']
-intTemperatures = [int(temp) for temp in calibTemperatures]
+delta_intensity = image_averages - mean_reference_averages
 
-calibPaths = [imagePath + '\\' + temp for temp in calibTemperatures]
-""" TODO: Have this list subfolders within the imagePath and use those as
-    calibration temperatures. Should be a function. """
-  
-calibRange = [[calibTemperatures[i], calibTemperatures[i+1],
-               intTemperatures[i] - intTemperatures[i+1]] 
-               for i in range(len(calibTemperatures)-1)]
-""" Pairs of temperatures and the difference between each pair. """
+delta_temperature = delta_intensity / grid_slopes
 
-calibImageSets = [plif_tools.listImages(path) for path in calibPaths]
+delta_temperature.to_excel(image_path+'\\temperature_deltas.xlsx')
 
-calibAverages = plif_tools.getCalibrationAverages(calibImageSets, 
-                                                  calibTemperatures, 
-                                                  gridNumber)
+plot_temperatures = delta_intensity / grid_slopes + int(calib_temperatures[0])
+""" Calculate the temperature based on the difference between the
+    calibration and the image's grid RGB averages.
+    """
 
-gridSlopesSet = [np.mean(calibAverages.ix[temp[0]] - calibAverages.ix[temp[1]]) 
-                 / temp[2] for temp in calibRange]
-                          
-gridSlopes = np.mean(pd.DataFrame(gridSlopesSet))
-""" TODO: This is awful to read. """
-
-calibrationTime = time() - importTime
-print('Calibration time: {} s.'.format(calibrationTime))
+if min(plot_temperatures.min()) < 25:
+    logger.warn('Subcooled, possibly erroneous temperatures')
 
 
-""" CALCULATING TEMPERATURE """
+plot_temperatures.to_excel(image_path + '\\' + results)
+""" Save the calculated temperatures for analysis. """
 
-deltaIntensity = imageAverages - meanReferenceAverages
 
-plotTemperatures = deltaIntensity / gridSlopes + intTemperatures[0]
-""" Calculates the temperature based on the difference between the calibration
-    and the image's grid RGB averages. Need to use temperature calibrations to
-    estimate how this differenc relates to temperature. """
-    
-plotTemperatures.to_excel(imagePath + '\\' + resultsName)
+""" Reporting the temperature statistics. """
 
-if soundOn:
-    Beep(600, 500)
+stats_list = pt.getTemperatureStats(plot_temperatures, image_path, statistics)
 
-print('Maximum value: {}'.format(max(plotTemperatures.max())))
-print('Minimum value: {}'.format(min(plotTemperatures.min())))
-print('Median value: {}'.format(np.median(plotTemperatures.median())))
-print('{} frames'.format(len(imageAverages)))
+pt.plotTemperatureStats(stats_list, image_path, plot_type)
 
-    
-""" PLOTTING TEMPERATURE """
 
-if plotLimitRequest:
-    zMinimum = float(input('Min graph? '))
-    zMaximum = float(input('Max graph? '))
-else:
-    zMinimum = 25
-    zMaximum = 100
-""" User sets the graph maximum and minimum temperature values. """
+""" Plotting temperature contour in each video frame. """
 
-if zMinimum > zMaximum:
-    zMinimum, zMaximum = zMaximum, zMinimum
-""" Corrects if the upper limit of the graph is lower than the lower limit. """
+if want_plots:
 
-plotRange = np.arange(gridNumber)
-xGrid, yGrid = np.meshgrid(plotRange, plotRange)
-""" Setting up the X and Y array for plotting purposes. """
+    z_minimum = 25
+    z_maximum = 100
+    """ User sets the graph maximum and minimum temperature values. """
 
-temperatureIntervals = np.arange(zMinimum, zMaximum, 1)
-""" The temperature range for the graph to use in scaling its color map. """
+    plot_range = np.arange(grid_number)
+    x_grid, y_grid = np.meshgrid(plot_range, plot_range)
+    """ Setting up the X and Y array for plotting purposes. """
 
-fig = plt.figure(figsize = (plotWidth, plotWidth/aspectRatio))
+    temperature_intervals = np.arange(z_minimum, z_maximum, 1)
+    """ The temperature range to scale the color map. """
 
-for index, row in (plotTemperatures).iterrows():
+    fig = plt.figure(figsize=(2.5*plot_width, 2.0*plot_width/aspect_ratio))
 
-    frameNumber += 1
-    if np.mod(frameNumber, 100) == 0:
-        print('Frame {}'.format(frameNumber))
-    if frameNumber > frameLimit: 
-        print('Frame limit reached.')        
-        break
-    """ Iterating over the frames, and escaping the loop if the frame limit
-        is exceeded. """
+    for index, row in plot_temperatures.iterrows():
 
-    frameTitle = 'Frame {}'.format(frameNumber - 1)
-    """ Title of each plot corresponds to its frame number in video. """
-    
-    plotTemperatureArray = np.reshape(row, (gridNumber, gridNumber))
-    """ plotTemperatureArray is the calculated temperature for a 3-D surface
-        plot. It takes the row of the temperature dataFrame and fits it to the
-        x- and y-grid set on the image during analysis. """
+        frame_title = 'Frame {}'.format(index-99)
+        """ Title of each plot corresponds to its frame number in video. """
 
-    plt.contourf(xGrid, yGrid, plotTemperatureArray, temperatureIntervals, 
-                 cmap = 'jet', vmin = zMinimum, vmax = zMaximum, extend='both')            
-    plt.title(frameTitle)
-    plt.xticks(np.arange(0, gridNumber, 1))
-    plt.yticks(np.arange(0, gridNumber, 1))
-    plt.colorbar()
-    plt.grid(color = 'k', linestyle = 'solid', which='both')
-    """ Creating and formatting the plot with a colormap, the previously set
-        Z limits, ticks with intervals of 1, and a black grid. """
+        plot_temperature_array = np.reshape(row, (grid_number, grid_number))
+        """ plotTemperatureArray is the calculated temperature for a
+            3-D surface plot. It takes the row of the temperature
+            dataFrame and fits it to the x- and y-grid set on the
+            image during analysis.
+            """
 
-    plt.savefig(figurePath + '\\' + frameTitle + plotType, dpi=100)
-    plt.clf()
-    """ Save the figure within a subfolder of the initial directory, and then
-        clear the figure for the next plot. """
+        plt.contourf(x_grid, y_grid, plot_temperature_array,
+                     temperature_intervals, cmap='jet', extend='both',
+                     vmin=z_minimum, vmax=z_maximum)
+        plt.title(frame_title)
+        plt.xticks(np.arange(0, grid_number, 1))
+        plt.yticks(np.arange(0, grid_number, 1))
+        plt.colorbar()
+        plt.grid(color='k', linestyle='solid', which='both')
+        """ Creating and formatting the plot with a colormap, the
+            previously set Z limits, ticks with intervals of 1,
+            and a black grid.
+            """
 
-if soundOn:
-    Beep(600, 500)
+        """ Save the figure within a subfolder of the initial
+            directory, and then clear the figure.
+            """
+        plt.savefig(figure_path + '\\' + frame_title + plot_type, dpi=50)
+        plt.clf()
 
-""" End of file """
+        if np.mod(index-99, 100) == 0:
+            logger.debug('Frame {} graphed'.format(index-99))
+        """ Iterating over the frames. """
+
+plt.close('all')
+
+if not want_plots:
+    logger.info('Temperatures not plotted.')
+
+logger.info('Complete\n')
